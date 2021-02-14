@@ -1,0 +1,10 @@
+{
+  "Nickname": "GeneralStoresIngredientsPatcher",
+  "Visibility": "Visible",
+  "OneLineDescription": "Adds ingredients from recipes to General Stores list of items to automatically unburden",
+  "LongDescription": "",
+  "PreferredAutoVersioning": "Default",
+  "RequiredMods": [
+    "GeneralStores.esm"
+  ]
+}
