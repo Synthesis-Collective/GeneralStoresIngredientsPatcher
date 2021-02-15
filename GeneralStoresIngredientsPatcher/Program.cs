@@ -50,6 +50,8 @@ namespace GeneralStoresIngredientsPatcher
             Skyrim.Light.Torch01,
         };
 
+        public static bool goSlower = false;
+
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
             var allSmithingSet = new HashSet<FormKey>();
@@ -117,43 +119,97 @@ namespace GeneralStoresIngredientsPatcher
 
             Console.WriteLine("Finding ingredients and results that we don't want to be burdened with.");
 
-            foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
+            if (!goSlower)
             {
-                var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
-                if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
+                // this seems to go faster than the other way?
+                var ingredients = state.LoadOrder.PriorityOrder.Ingredient().WinningOverrides().Select(x => x.FormKey);
+                var ingestibles = state.LoadOrder.PriorityOrder.Ingestible().WinningOverrides().Select(x => x.FormKey);
+                var ingredientsOrIngestibles = ingredients.Union(ingestibles).ToHashSet();
+                var armors = state.LoadOrder.PriorityOrder.Armor().WinningOverrides().ToDictionary(x => x.FormKey);
+                var weapons = state.LoadOrder.PriorityOrder.Weapon().WinningOverrides().Select(x => x.FormKey).ToHashSet();
 
-                var items = cobj.Items;
-                if (items == null && !workbenchesThatNeedNoItems.Contains(workbenchKeywordFormKey)) continue;
-
-                formListsForWorkbench[workbenchKeywordFormKey](cobj);
-
-                if (items == null) continue;
-                foreach (var item in items)
+                foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
                 {
-                    var itemFormKey = item.Item.Item.FormKey;
-                    var shouldUnburden = true;
+                    var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
+                    if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
 
-                    if (doNotUnburdenFormKeys.Contains(itemFormKey))
-                        shouldUnburden = false;
-                    else if (state.LinkCache.TryResolve<IIngredientGetter>(itemFormKey, out _) || state.LinkCache.TryResolve<IIngestibleGetter>(itemFormKey, out _))
+                    var items = cobj.Items;
+                    if (items == null && !workbenchesThatNeedNoItems.Contains(workbenchKeywordFormKey)) continue;
+
+                    formListsForWorkbench[workbenchKeywordFormKey](cobj);
+
+                    if (items == null) continue;
+                    foreach (var item in items)
                     {
-                        ingredientSet.Add(itemFormKey);
-                        shouldUnburden = false;
-                    }
-                    else if (state.LinkCache.TryResolve<IArmorGetter>(itemFormKey, out var theArmor))
-                    {
-                        if (theArmor.EditorID?.Contains("Ring Shank") == true)
-                            shouldUnburden = true; // intermediate ingredient from Immersive Jewellery
-                        else
+                        var itemFormKey = item.Item.Item.FormKey;
+                        var shouldUnburden = true;
+
+                        if (doNotUnburdenFormKeys.Contains(itemFormKey))
                             shouldUnburden = false;
-                    }
-                    else if (state.LinkCache.TryResolve<IWeaponGetter>(itemFormKey, out _))
-                        shouldUnburden = false;
+                        else if (ingredientsOrIngestibles.Contains(itemFormKey))
+                        {
+                            ingredientSet.Add(itemFormKey);
+                            shouldUnburden = false;
+                        }
+                        else if (armors.TryGetValue(itemFormKey, out var theArmor))
+                        {
+                            if (theArmor.EditorID?.Contains("Ring Shank") == true)
+                                shouldUnburden = true; // intermediate ingredient from Immersive Jewellery
+                            else
+                                shouldUnburden = false;
+                        }
+                        else if (weapons.Contains(itemFormKey))
+                            shouldUnburden = false;
 
-                    if (shouldUnburden)
+                        if (shouldUnburden)
+                        {
+                            allSet.Add(itemFormKey);
+                            specificSet.Add(itemFormKey);
+                        }
+                    }
+                }
+
+            }
+            else
+            {
+                foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
+                {
+                    var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
+                    if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
+
+                    var items = cobj.Items;
+                    if (items == null && !workbenchesThatNeedNoItems.Contains(workbenchKeywordFormKey)) continue;
+
+                    formListsForWorkbench[workbenchKeywordFormKey](cobj);
+
+                    if (items == null) continue;
+                    foreach (var item in items)
                     {
-                        allSet.Add(itemFormKey);
-                        specificSet.Add(itemFormKey);
+                        var itemFormKey = item.Item.Item.FormKey;
+                        var shouldUnburden = true;
+
+                        if (doNotUnburdenFormKeys.Contains(itemFormKey))
+                            shouldUnburden = false;
+                        else if (state.LinkCache.TryResolve<IIngredientGetter>(itemFormKey, out _) || state.LinkCache.TryResolve<IIngestibleGetter>(itemFormKey, out _))
+                        {
+                            ingredientSet.Add(itemFormKey);
+                            shouldUnburden = false;
+                        }
+                        else if (state.LinkCache.TryResolve<IArmorGetter>(itemFormKey, out var theArmor))
+                        {
+                            if (theArmor.EditorID?.Contains("Ring Shank") == true)
+                                shouldUnburden = true; // intermediate ingredient from Immersive Jewellery
+                            else
+                                shouldUnburden = false;
+                        }
+                        else if (state.LinkCache.TryResolve<IWeaponGetter>(itemFormKey, out _))
+                            shouldUnburden = false;
+
+                        if (shouldUnburden)
+                        {
+                            allSet.Add(itemFormKey);
+                            specificSet.Add(itemFormKey);
+                        }
                     }
                 }
             }
@@ -173,14 +229,14 @@ namespace GeneralStoresIngredientsPatcher
 
                 var flstEDID = flst.EditorID;
 
-                var missingSet = new HashSet<FormKey>();
+                var missingSet = new HashSet<FormKey>(set.Count);
 
                 Console.WriteLine($"Found {set.Count} records that should be in {flstEDID}");
 
+                var items = flst.Items.Select(x => x.FormKey).ToHashSet();
+
                 foreach (var item in flst.Items.Select(x => x.FormKey))
-                    if (set.Contains(item))
-                        set.Remove(item);
-                    else
+                    if (!set.Remove(item))
                         missingSet.Add(item);
 
                 if (missingSet.Count > 0)
@@ -196,8 +252,7 @@ namespace GeneralStoresIngredientsPatcher
 
                 var modifiedFlst = state.PatchMod.FormLists.GetOrAddAsOverride(flst);
 
-                foreach (var item in orderByPriorityAndID(set))
-                    modifiedFlst.Items.Add(item);
+                modifiedFlst.Items.AddRange(orderByPriorityAndID(set));
             }
 
             applySetToFLST(GeneralStores.FormList.xGSxAlchCookFLST, alchemyAndCookingSet);
