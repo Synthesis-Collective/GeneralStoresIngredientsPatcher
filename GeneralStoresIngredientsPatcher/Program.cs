@@ -49,8 +49,6 @@ namespace GeneralStoresIngredientsPatcher
             HearthFires.Keyword.BYOHCraftingOven
         };
 
-        public static int algoNumber = 2;
-
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
             var doNotUnburdenFormKeys = Settings.Value.DoNotUnburdenList;
@@ -120,147 +118,52 @@ namespace GeneralStoresIngredientsPatcher
 
             Console.WriteLine("Finding ingredients and results that we don't want to be burdened with.");
 
-            switch (algoNumber) {
-                case 0:
-                    foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
-                    {
-                        var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
-                        if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
+            foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
+            {
+                var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
+                if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
 
-                        var items = cobj.Items;
-                        if (items == null && !workbenchesThatNeedNoItems.Contains(workbenchKeywordFormKey)) continue;
+                var items = cobj.Items;
+                if (items == null && !workbenchesThatNeedNoItems.Contains(workbenchKeywordFormKey)) continue;
 
-                        formListsForWorkbench[workbenchKeywordFormKey](cobj);
+                formListsForWorkbench[workbenchKeywordFormKey](cobj);
 
-                        if (items == null) continue;
-                        foreach (var item in items)
-                        {
-                            var itemFormKey = item.Item.Item.FormKey;
-                            var shouldUnburden = true;
+                if (items == null) continue;
+                foreach (var item in items)
+                {
+                    var itemFormKey = item.Item.Item.FormKey;
+                    var shouldUnburden = true;
+                    if (doNotUnburdenFormKeys.Contains(itemFormKey))
+                        shouldUnburden = false;
 
-                            if (doNotUnburdenFormKeys.Contains(itemFormKey))
+                    if (!item.Item.Item.TryResolve(state.LinkCache, out var record)) continue;
+
+                    switch (record) {
+                        case IIngredientGetter ingredient:
+                        case IIngestibleGetter ingestible:
+                            ingredientSet.Add(itemFormKey);
+                            shouldUnburden = false;
+                            break;
+                        case IArmorGetter armor:
+                            if (armor.EditorID?.Contains("Ring Shank") == true)
+                                shouldUnburden = true; // intermediate ingredient from Immersive Jewellery
+                            else
                                 shouldUnburden = false;
-                            else if (state.LinkCache.TryResolve<IIngredientGetter>(itemFormKey, out _) || state.LinkCache.TryResolve<IIngestibleGetter>(itemFormKey, out _))
-                            {
-                                ingredientSet.Add(itemFormKey);
-                                shouldUnburden = false;
-                            }
-                            else if (state.LinkCache.TryResolve<IArmorGetter>(itemFormKey, out var theArmor))
-                            {
-                                if (theArmor.EditorID?.Contains("Ring Shank") == true)
-                                    shouldUnburden = true; // intermediate ingredient from Immersive Jewellery
-                                else
-                                    shouldUnburden = false;
-                            }
-                            else if (state.LinkCache.TryResolve<IWeaponGetter>(itemFormKey, out _))
-                                shouldUnburden = false;
-
-                            if (shouldUnburden)
-                            {
-                                allSet.Add(itemFormKey);
-                                specificSet.Add(itemFormKey);
-                            }
-                        }
+                            break;
+                        case IWeaponGetter weapon:
+                            shouldUnburden = false;
+                            break;
+                        default:
+                            shouldUnburden = true;
+                            break;
                     }
-                    break;
-                case 1:
-                    // this seems to go faster than the other way?
-                    var ingredients = state.LoadOrder.PriorityOrder.Ingredient().WinningOverrides().Select(x => x.FormKey);
-                    var ingestibles = state.LoadOrder.PriorityOrder.Ingestible().WinningOverrides().Select(x => x.FormKey);
-                    var ingredientsOrIngestibles = ingredients.Union(ingestibles).ToHashSet();
-                    var armors = state.LoadOrder.PriorityOrder.Armor().WinningOverrides().ToDictionary(x => x.FormKey);
-                    var weapons = state.LoadOrder.PriorityOrder.Weapon().WinningOverrides().Select(x => x.FormKey).ToHashSet();
 
-                    foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
+                    if (shouldUnburden)
                     {
-                        var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
-                        if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
-
-                        var items = cobj.Items;
-                        if (items == null && !workbenchesThatNeedNoItems.Contains(workbenchKeywordFormKey)) continue;
-
-                        formListsForWorkbench[workbenchKeywordFormKey](cobj);
-
-                        if (items == null) continue;
-                        foreach (var item in items)
-                        {
-                            var itemFormKey = item.Item.Item.FormKey;
-                            var shouldUnburden = true;
-
-                            if (doNotUnburdenFormKeys.Contains(itemFormKey))
-                                shouldUnburden = false;
-                            else if (ingredientsOrIngestibles.Contains(itemFormKey))
-                            {
-                                ingredientSet.Add(itemFormKey);
-                                shouldUnburden = false;
-                            }
-                            else if (armors.TryGetValue(itemFormKey, out var theArmor))
-                            {
-                                if (theArmor.EditorID?.Contains("Ring Shank") == true)
-                                    shouldUnburden = true; // intermediate ingredient from Immersive Jewellery
-                                else
-                                    shouldUnburden = false;
-                            }
-                            else if (weapons.Contains(itemFormKey))
-                                shouldUnburden = false;
-
-                            if (shouldUnburden)
-                            {
-                                allSet.Add(itemFormKey);
-                                specificSet.Add(itemFormKey);
-                            }
-                        }
+                        allSet.Add(itemFormKey);
+                        specificSet.Add(itemFormKey);
                     }
-                    break;
-                case 2:
-                    foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
-                    {
-                        var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
-                        if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
-
-                        var items = cobj.Items;
-                        if (items == null && !workbenchesThatNeedNoItems.Contains(workbenchKeywordFormKey)) continue;
-
-                        formListsForWorkbench[workbenchKeywordFormKey](cobj);
-
-                        if (items == null) continue;
-                        foreach (var item in items)
-                        {
-                            var itemFormKey = item.Item.Item.FormKey;
-                            var shouldUnburden = true;
-                            if (doNotUnburdenFormKeys.Contains(itemFormKey))
-                                shouldUnburden = false;
-
-                            if (!item.Item.Item.TryResolve(state.LinkCache, out var record)) continue;
-
-                            switch (record) {
-                                case IIngredientGetter ingredient:
-                                case IIngestibleGetter ingestible:
-                                    ingredientSet.Add(itemFormKey);
-                                    shouldUnburden = false;
-                                    break;
-                                case IArmorGetter armor:
-                                    if (armor.EditorID?.Contains("Ring Shank") == true)
-                                        shouldUnburden = true; // intermediate ingredient from Immersive Jewellery
-                                    else
-                                        shouldUnburden = false;
-                                    break;
-                                case IWeaponGetter weapon:
-                                    shouldUnburden = false;
-                                    break;
-                                default:
-                                    shouldUnburden = true;
-                                    break;
-                            }
-
-                            if (shouldUnburden)
-                            {
-                                allSet.Add(itemFormKey);
-                                specificSet.Add(itemFormKey);
-                            }
-                        }
-                    }
-                    break;
+                }
             }
 
             Console.WriteLine("Adding found items to GeneralStores Form Lists...");
