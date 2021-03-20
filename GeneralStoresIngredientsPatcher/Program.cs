@@ -23,17 +23,11 @@ namespace GeneralStoresIngredientsPatcher
                     nickname: "Settings",
                     path: "settings.json",
                     out Settings)
-                .Run(args, new RunPreferences()
-                {
-                    ActionsForEmptyArgs = new RunDefaultPatcher()
-                    {
-                        IdentifyingModKey = "YourPatcher.esp",
-                        TargetRelease = GameRelease.SkyrimSE,
-                    }
-                });
+                .SetTypicalOpen(GameRelease.SkyrimSE, "GeneralStoresIngredientsPatcher.esp")
+                .Run(args);
         }
 
-        public static readonly ISet<FormKey> workbenchFilter = new HashSet<FormKey>(){
+        public static readonly HashSet<IFormLink<IKeywordGetter>> workbenchFilter = new(){
             Skyrim.Keyword.CraftingSmelter,
             Skyrim.Keyword.CraftingSmithingForge,
             Skyrim.Keyword.CraftingCookpot,
@@ -43,7 +37,7 @@ namespace GeneralStoresIngredientsPatcher
             HearthFires.Keyword.BYOHCarpenterTable
         };
 
-        public static readonly ISet<FormKey> workbenchesThatNeedNoItems = new HashSet<FormKey>(){
+        public static readonly HashSet<IFormLink<IKeywordGetter>> workbenchesThatNeedNoItems = new(){
             Skyrim.Keyword.CraftingCookpot,
             Skyrim.Keyword.isGrainMill,
             HearthFires.Keyword.BYOHCraftingOven
@@ -53,26 +47,28 @@ namespace GeneralStoresIngredientsPatcher
         {
             var doNotUnburdenFormKeys = Settings.Value.DoNotUnburdenList;
 
-            var allSmithingSet = new HashSet<FormKey>();
-            var smeltingSet = new HashSet<FormKey>();
-            var smithingSet = new HashSet<FormKey>();
-            var tanningSet = new HashSet<FormKey>();
-            var hearthFiresConstructionSet = new HashSet<FormKey>();
+            var allSmithingSet = new HashSet<IFormLinkGetter<IItemGetter>>();
+            var smeltingSet = new HashSet<IFormLinkGetter<IItemGetter>>();
+            var smithingSet = new HashSet<IFormLinkGetter<IItemGetter>>();
+            var tanningSet = new HashSet<IFormLinkGetter<IItemGetter>>();
 
-            var hearthFiresIngredientSet = new HashSet<FormKey>();
-            var alchemyAndCookingSet = new HashSet<FormKey>();
-            var alchemyAndSmithingSet = new HashSet<FormKey>();
+            var hearthFiresConstructionSet = new HashSet<IFormLinkGetter<IItemGetter>>();
+            var hearthFiresIngredientSet = new HashSet<IFormLinkGetter<IItemGetter>>();
+
+            var alchemyAndCookingSet = new HashSet<IFormLinkGetter<IItemGetter>>();
+            var alchemyAndSmithingSet = new HashSet<IFormLinkGetter<IItemGetter>>();
 
             // VendorItemFoodRaw / VendorItemFood
-            var allFoodSet = new HashSet<FormKey>();
-            var cookedFoodSet = new HashSet<FormKey>();
-            var rawFoodSet = new HashSet<FormKey>();
+            var allFoodSet = new HashSet<IFormLinkGetter<IItemGetter>>();
+            var cookedFoodSet = new HashSet<IFormLinkGetter<IItemGetter>>();
+            var rawFoodSet = new HashSet<IFormLinkGetter<IItemGetter>>();
 
-            ISet<FormKey> specificSet = allSmithingSet;
-            ISet<FormKey> allSet = smeltingSet;
-            ISet<FormKey> ingredientSet = alchemyAndSmithingSet;
+            // gets set to different sets dependin on recipe type.
+            var specificSet = allSmithingSet;
+            var allSet = smeltingSet;
+            var ingredientSet = alchemyAndSmithingSet;
 
-            var formListsForWorkbench = new Dictionary<FormKey, Action<IConstructibleObjectGetter>>()
+            var formListsForWorkbench = new Dictionary<IFormLink<IKeywordGetter>, Action<IConstructibleObjectGetter>>()
             {
                 {Skyrim.Keyword.CraftingSmelter, delegate {
                     ingredientSet = alchemyAndSmithingSet;
@@ -95,7 +91,7 @@ namespace GeneralStoresIngredientsPatcher
                     specificSet = hearthFiresConstructionSet;
                 }},
                 {Skyrim.Keyword.CraftingCookpot, delegate(IConstructibleObjectGetter cobj) {
-                    if (cobj.CreatedObject.FormKeyNullable is FormKey result) {
+                    if (cobj.CreatedObject is IFormLink<IItemGetter> result) {
                         allFoodSet.Add(result);
                         cookedFoodSet.Add(result);
                     }
@@ -104,7 +100,7 @@ namespace GeneralStoresIngredientsPatcher
                     specificSet = rawFoodSet;
                 }},
                 {Skyrim.Keyword.isGrainMill, delegate(IConstructibleObjectGetter cobj) {
-                    if (cobj.CreatedObject.FormKeyNullable is FormKey result) {
+                    if (cobj.CreatedObject is IFormLink<IItemGetter> result) {
                         rawFoodSet.Add(result);
                         cookedFoodSet.Add(result);
                     }
@@ -120,7 +116,8 @@ namespace GeneralStoresIngredientsPatcher
 
             foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
             {
-                var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
+                if (cobj.WorkbenchKeyword is not IFormLink<IKeywordGetter> workbenchKeywordFormKey) continue;
+
                 if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
 
                 var items = cobj.Items;
@@ -131,7 +128,7 @@ namespace GeneralStoresIngredientsPatcher
                 if (items == null) continue;
                 foreach (var item in items)
                 {
-                    var itemFormKey = item.Item.Item.FormKey;
+                    var itemFormKey = item.Item.Item;
                     var shouldUnburden = true;
                     if (doNotUnburdenFormKeys.Contains(itemFormKey))
                         shouldUnburden = false;
@@ -170,26 +167,30 @@ namespace GeneralStoresIngredientsPatcher
 
             var modCount = state.LoadOrder.PriorityOrder.Count();
 
-            var modKeyToPriority = state.LoadOrder.PriorityOrder.Select((x, i) => (x.ModKey, i)).ToDictionary(x => x.ModKey, x => (uint)(modCount - x.i));
+            var modKeyToPriority = state.LoadOrder.PriorityOrder
+                .Select((x, i) => (x.ModKey, i))
+                .ToDictionary(x => x.ModKey, x => (uint)(modCount - x.i));
 
-            IOrderedEnumerable<FormKey> orderByPriorityAndID(ISet<FormKey> formKeySet) => formKeySet.OrderBy(x => ((ulong)modKeyToPriority[x.ModKey] << 24) | x.ID);
+            IOrderedEnumerable<IFormLinkGetter<IItemGetter>> orderByPriorityAndID(ISet<IFormLinkGetter<IItemGetter>> formKeySet) => formKeySet.OrderBy(x => ((ulong)modKeyToPriority[x.FormKey.ModKey] << 24) | x.FormKey.ID);
 
-            void applySetToFLST(FormKey flstKey, ISet<FormKey> set)
+            void applySetToFLST(FormLink<IFormListGetter> flstKey, ISet<IFormLinkGetter<IItemGetter>> set)
             {
                 var flst = state.LinkCache.Resolve<IFormListGetter>(flstKey);
                 if (flst is null) return;
 
                 var flstEDID = flst.EditorID;
 
-                var missingSet = new HashSet<FormKey>(set.Count);
+                var missingSet = new HashSet<IFormLinkGetter<IItemGetter>>(set.Count);
 
                 Console.WriteLine($"Found {set.Count} records that should be in {flstEDID}");
 
-                var items = flst.Items.Select(x => x.FormKey).ToHashSet();
+                var items = flst.Items
+                    .ToHashSet();
 
-                foreach (var item in flst.Items.Select(x => x.FormKey))
-                    if (!set.Remove(item))
-                        missingSet.Add(item);
+                foreach (var thing in flst.Items)
+                    if (thing is IFormLink<IItemGetter> item)
+                        if (!set.Remove(item))
+                            missingSet.Add(item);
 
                 if (missingSet.Count > 0)
                 {
