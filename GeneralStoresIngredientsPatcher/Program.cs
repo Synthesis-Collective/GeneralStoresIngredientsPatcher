@@ -23,17 +23,11 @@ namespace GeneralStoresIngredientsPatcher
                     nickname: "Settings",
                     path: "settings.json",
                     out Settings)
-                .Run(args, new RunPreferences()
-                {
-                    ActionsForEmptyArgs = new RunDefaultPatcher()
-                    {
-                        IdentifyingModKey = "YourPatcher.esp",
-                        TargetRelease = GameRelease.SkyrimSE,
-                    }
-                });
+                .SetTypicalOpen(GameRelease.SkyrimSE, "YourPatcher.esp")
+                .Run(args);
         }
 
-        public static readonly ISet<FormKey> workbenchFilter = new HashSet<FormKey>(){
+        public static readonly ISet<IFormLinkGetter<IKeywordGetter>> workbenchFilter = new HashSet<IFormLinkGetter<IKeywordGetter>>(){
             Skyrim.Keyword.CraftingSmelter,
             Skyrim.Keyword.CraftingSmithingForge,
             Skyrim.Keyword.CraftingCookpot,
@@ -43,7 +37,7 @@ namespace GeneralStoresIngredientsPatcher
             HearthFires.Keyword.BYOHCarpenterTable
         };
 
-        public static readonly ISet<FormKey> workbenchesThatNeedNoItems = new HashSet<FormKey>(){
+        public static readonly ISet<IFormLinkGetter<IKeywordGetter>> workbenchesThatNeedNoItems = new HashSet<IFormLinkGetter<IKeywordGetter>>(){
             Skyrim.Keyword.CraftingCookpot,
             Skyrim.Keyword.isGrainMill,
             HearthFires.Keyword.BYOHCraftingOven
@@ -74,27 +68,27 @@ namespace GeneralStoresIngredientsPatcher
 
             var formListsForWorkbench = new Dictionary<FormKey, Action<IConstructibleObjectGetter>>()
             {
-                {Skyrim.Keyword.CraftingSmelter, delegate {
+                {Skyrim.Keyword.CraftingSmelter.FormKey, delegate {
                     ingredientSet = alchemyAndSmithingSet;
                     allSet = allSmithingSet;
                     specificSet = smeltingSet;
                 }},
-                {Skyrim.Keyword.CraftingSmithingForge, delegate {
+                {Skyrim.Keyword.CraftingSmithingForge.FormKey, delegate {
                     ingredientSet = alchemyAndSmithingSet;
                     allSet = allSmithingSet;
                     specificSet = smithingSet;
                 }},
-                {Skyrim.Keyword.CraftingTanningRack, delegate {
+                {Skyrim.Keyword.CraftingTanningRack.FormKey, delegate {
                     ingredientSet = alchemyAndSmithingSet;
                     allSet = allSmithingSet;
                     specificSet = tanningSet;
                 }},
-                {HearthFires.Keyword.BYOHCarpenterTable, delegate {
+                {HearthFires.Keyword.BYOHCarpenterTable.FormKey, delegate {
                     ingredientSet = hearthFiresIngredientSet;
                     allSet = allSmithingSet;
                     specificSet = hearthFiresConstructionSet;
                 }},
-                {Skyrim.Keyword.CraftingCookpot, delegate(IConstructibleObjectGetter cobj) {
+                {Skyrim.Keyword.CraftingCookpot.FormKey, delegate(IConstructibleObjectGetter cobj) {
                     if (cobj.CreatedObject.FormKeyNullable is FormKey result) {
                         allFoodSet.Add(result);
                         cookedFoodSet.Add(result);
@@ -103,7 +97,7 @@ namespace GeneralStoresIngredientsPatcher
                     allSet = allFoodSet;
                     specificSet = rawFoodSet;
                 }},
-                {Skyrim.Keyword.isGrainMill, delegate(IConstructibleObjectGetter cobj) {
+                {Skyrim.Keyword.isGrainMill.FormKey, delegate(IConstructibleObjectGetter cobj) {
                     if (cobj.CreatedObject.FormKeyNullable is FormKey result) {
                         rawFoodSet.Add(result);
                         cookedFoodSet.Add(result);
@@ -114,26 +108,25 @@ namespace GeneralStoresIngredientsPatcher
                 }},
             };
 
-            formListsForWorkbench[HearthFires.Keyword.BYOHCraftingOven] = formListsForWorkbench[Skyrim.Keyword.CraftingCookpot];
+            formListsForWorkbench[HearthFires.Keyword.BYOHCraftingOven.FormKey] = formListsForWorkbench[Skyrim.Keyword.CraftingCookpot.FormKey];
 
             Console.WriteLine("Finding ingredients and results that we don't want to be burdened with.");
 
             foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
             {
-                var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
-                if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
+                if (!workbenchFilter.Contains(cobj.WorkbenchKeyword)) continue;
 
                 var items = cobj.Items;
-                if (items == null && !workbenchesThatNeedNoItems.Contains(workbenchKeywordFormKey)) continue;
+                if (items == null && !workbenchesThatNeedNoItems.Contains(cobj.WorkbenchKeyword)) continue;
 
-                formListsForWorkbench[workbenchKeywordFormKey](cobj);
+                formListsForWorkbench[cobj.WorkbenchKeyword.FormKey](cobj);
 
                 if (items == null) continue;
                 foreach (var item in items)
                 {
-                    var itemFormKey = item.Item.Item.FormKey;
+                    var itemLink = item.Item.Item;
                     var shouldUnburden = true;
-                    if (doNotUnburdenFormKeys.Contains(itemFormKey))
+                    if (doNotUnburdenFormKeys.Contains(itemLink))
                         shouldUnburden = false;
 
                     if (!item.Item.Item.TryResolve(state.LinkCache, out var record)) continue;
@@ -141,7 +134,7 @@ namespace GeneralStoresIngredientsPatcher
                     switch (record) {
                         case IIngredientGetter ingredient:
                         case IIngestibleGetter ingestible:
-                            ingredientSet.Add(itemFormKey);
+                            ingredientSet.Add(itemLink.FormKey);
                             shouldUnburden = false;
                             break;
                         case IArmorGetter armor:
@@ -160,8 +153,8 @@ namespace GeneralStoresIngredientsPatcher
 
                     if (shouldUnburden)
                     {
-                        allSet.Add(itemFormKey);
-                        specificSet.Add(itemFormKey);
+                        allSet.Add(itemLink.FormKey);
+                        specificSet.Add(itemLink.FormKey);
                     }
                 }
             }
@@ -220,7 +213,7 @@ namespace GeneralStoresIngredientsPatcher
             applySetToFLST(GeneralStores.FormList.xGSxTanningFLST, tanningSet);
 
             // these FormLists have been merged into GeneralStores.esm in SkyrimSE/VR, but are in a separate plugin in SkyrimLE.
-            switch (state.Settings.GameRelease)
+            switch (state.GameRelease)
             {
                 case GameRelease.SkyrimSE:
                 case GameRelease.SkyrimVR:
