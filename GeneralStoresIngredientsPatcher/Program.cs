@@ -41,7 +41,6 @@ namespace GeneralStoresIngredientsPatcher
             gameRelease: state.GameRelease).RunPatch();
         }
 
-
         public readonly HashSet<IFormLinkGetter<IItemGetter>> allSmithingSet = new();
         public readonly HashSet<IFormLinkGetter<IItemGetter>> smeltingSet = new();
         public readonly HashSet<IFormLinkGetter<IItemGetter>> smithingSet = new();
@@ -75,16 +74,16 @@ namespace GeneralStoresIngredientsPatcher
 
         public void RunPatch()
         {
-            ClassifyRecipeItems();
+            ClassifyRecipeItems(Settings.Value.DoNotUnburdenList);
 
             RecordClassifiedItems();
         }
 
-        public void ClassifyRecipeItems()
+        public void ClassifyRecipeItems(HashSet<IFormLinkGetter<IItemGetter>> doNotUnburdenFormKeys)
         {
             Console.WriteLine("Finding ingredients and results that we don't want to be burdened with.");
 
-            var doNotUnburdenFormKeys = Settings.Value.DoNotUnburdenList;
+            //var doNotUnburdenFormKeys = Settings.Value.DoNotUnburdenList;
 
             var rpfw = recipeProcessorForWorkbench;
 
@@ -106,22 +105,22 @@ namespace GeneralStoresIngredientsPatcher
         {
             if (recipe.WorkbenchKeyword is not IFormLinkGetter<IKeywordGetter> workbench) return;
 
-            if (!recipeProcessorForWorkbench.TryGetValue(workbench, out var recipeProcessor))
-                return;
-
             if (recipe.CreatedObject is IFormLinkGetter<IItemGetter> result)
             {
-                if (workbench == Skyrim.Keyword.CraftingCookpot || workbench == HearthFires.Keyword.BYOHCraftingOven)
+                if (workbench.Equals(Skyrim.Keyword.CraftingCookpot) || workbench.Equals(HearthFires.Keyword.BYOHCraftingOven))
                 {
                     allFoodSet.Add(result);
                     cookedFoodSet.Add(result);
                 }
-                else if (workbench == Skyrim.Keyword.isGrainMill)
+                else if (workbench.Equals(Skyrim.Keyword.isGrainMill))
                 {
                     rawFoodSet.Add(result);
                     cookedFoodSet.Add(result);
                 }
             }
+
+            if (!recipeProcessorForWorkbench.TryGetValue(workbench, out var recipeProcessor))
+                return;
 
             recipeProcessor.ClassifyRecipeIngredients(recipe);
         }

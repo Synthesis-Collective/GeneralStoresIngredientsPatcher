@@ -29,12 +29,11 @@ namespace GeneralStoresIngredientsPatcher
             if (items == null) return;
 
             foreach (var item in items)
-                ClassifyIngredient(item);
+                ClassifyIngredient(item.Item.Item);
         }
 
-        public void ClassifyIngredient(IContainerEntryGetter item)
+        public void ClassifyIngredient(IFormLinkGetter<IItemGetter> itemLink)
         {
-            var itemLink = item.Item.Item;
             if (!itemLink.TryResolve(LinkCache, out var record)) return;
 
             bool shouldUnburden;

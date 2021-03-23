@@ -19,6 +19,10 @@ namespace Tests
 
             var origFlst = masterMod.FormLists.AddNew("origFlst");
 
+            var newThing = masterMod.MiscItems.AddNew("newItem");
+
+            origFlst.Items.Add(newThing.AsLink());
+
             SkyrimMod patchMod = new(patchModKey, SkyrimRelease.SkyrimSE);
 
             var linkCache = masterMod.ToImmutableLinkCache();

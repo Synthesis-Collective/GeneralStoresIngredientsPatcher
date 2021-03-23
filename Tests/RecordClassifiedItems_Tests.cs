@@ -1,4 +1,4 @@
-using GeneralStoresIngredientsPatcher;
+﻿using GeneralStoresIngredientsPatcher;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.FormKeys.SkyrimLE;
 using Mutagen.Bethesda.Skyrim;
@@ -9,12 +9,6 @@ using GeneralStores = Mutagen.Bethesda.FormKeys.SkyrimSE.GeneralStores;
 
 namespace Tests
 {
-
-    public class Blah
-    {
-
-    }
-
     public class RecordClassifiedItems_Tests
     {
         public static ModKey masterModKey = ModKey.FromNameAndExtension("master.esp");
