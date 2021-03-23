@@ -4,6 +4,15 @@ VisualStudioVersion = 16.0.30330.147
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GeneralStoresIngredientsPatcher", "GeneralStoresIngredientsPatcher\GeneralStoresIngredientsPatcher.csproj", "{8BA2E1B7-DD65-42B6-A780-17E4037A3C1B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{C43314A0-ACE1-4837-B1EA-04B5B5FD0C73}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3B30903E-15F0-4E13-BB94-0017D92E5A71}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\ci-dev.yaml = .github\workflows\ci-dev.yaml
+		.github\workflows\ci-prod.yaml = .github\workflows\ci-prod.yaml
+		coverlet.runsettings = coverlet.runsettings
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +23,10 @@ Global
 		{8BA2E1B7-DD65-42B6-A780-17E4037A3C1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8BA2E1B7-DD65-42B6-A780-17E4037A3C1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8BA2E1B7-DD65-42B6-A780-17E4037A3C1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C43314A0-ACE1-4837-B1EA-04B5B5FD0C73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C43314A0-ACE1-4837-B1EA-04B5B5FD0C73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C43314A0-ACE1-4837-B1EA-04B5B5FD0C73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C43314A0-ACE1-4837-B1EA-04B5B5FD0C73}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

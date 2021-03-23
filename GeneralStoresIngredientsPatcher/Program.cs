@@ -15,6 +15,12 @@ namespace GeneralStoresIngredientsPatcher
     {
         static Lazy<Settings> Settings = null!;
 
+        private readonly LoadOrder<IModListing<ISkyrimModGetter>> LoadOrder;
+        private readonly ILinkCache<ISkyrimMod, ISkyrimModGetter> LinkCache;
+        private readonly ISkyrimMod PatchMod;
+        private readonly GameRelease GameRelease;
+        private readonly Comparer<FormKey> loadOrderComparer;
+
         public static async Task<int> Main(string[] args)
         {
             return await SynthesisPipeline.Instance
@@ -23,220 +29,164 @@ namespace GeneralStoresIngredientsPatcher
                     nickname: "Settings",
                     path: "settings.json",
                     out Settings)
-                .Run(args, new RunPreferences()
-                {
-                    ActionsForEmptyArgs = new RunDefaultPatcher()
-                    {
-                        IdentifyingModKey = "YourPatcher.esp",
-                        TargetRelease = GameRelease.SkyrimSE,
-                    }
-                });
+                .SetTypicalOpen(GameRelease.SkyrimSE, "GeneralStoresIngredientsPatcher.esp")
+                .Run(args);
         }
-
-        public static readonly ISet<FormKey> workbenchFilter = new HashSet<FormKey>(){
-            Skyrim.Keyword.CraftingSmelter,
-            Skyrim.Keyword.CraftingSmithingForge,
-            Skyrim.Keyword.CraftingCookpot,
-            Skyrim.Keyword.CraftingTanningRack,
-            Skyrim.Keyword.isGrainMill,
-            HearthFires.Keyword.BYOHCraftingOven,
-            HearthFires.Keyword.BYOHCarpenterTable
-        };
-
-        public static readonly ISet<FormKey> workbenchesThatNeedNoItems = new HashSet<FormKey>(){
-            Skyrim.Keyword.CraftingCookpot,
-            Skyrim.Keyword.isGrainMill,
-            HearthFires.Keyword.BYOHCraftingOven
-        };
 
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            var doNotUnburdenFormKeys = Settings.Value.DoNotUnburdenList;
+            new Program(loadOrder: state.LoadOrder,
+            linkCache: state.LinkCache,
+            patchMod: state.PatchMod,
+            gameRelease: state.GameRelease).RunPatch();
+        }
 
-            var allSmithingSet = new HashSet<FormKey>();
-            var smeltingSet = new HashSet<FormKey>();
-            var smithingSet = new HashSet<FormKey>();
-            var tanningSet = new HashSet<FormKey>();
-            var hearthFiresConstructionSet = new HashSet<FormKey>();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> allSmithingSet = new();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> smeltingSet = new();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> smithingSet = new();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> tanningSet = new();
 
-            var hearthFiresIngredientSet = new HashSet<FormKey>();
-            var alchemyAndCookingSet = new HashSet<FormKey>();
-            var alchemyAndSmithingSet = new HashSet<FormKey>();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> hearthFiresConstructionSet = new();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> hearthFiresIngredientSet = new();
 
-            // VendorItemFoodRaw / VendorItemFood
-            var allFoodSet = new HashSet<FormKey>();
-            var cookedFoodSet = new HashSet<FormKey>();
-            var rawFoodSet = new HashSet<FormKey>();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> alchemyAndCookingSet = new();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> alchemyAndSmithingSet = new();
 
-            ISet<FormKey> specificSet = allSmithingSet;
-            ISet<FormKey> allSet = smeltingSet;
-            ISet<FormKey> ingredientSet = alchemyAndSmithingSet;
+        // VendorItemFoodRaw / VendorItemFood
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> allFoodSet = new();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> cookedFoodSet = new();
+        public readonly HashSet<IFormLinkGetter<IItemGetter>> rawFoodSet = new();
 
-            var formListsForWorkbench = new Dictionary<FormKey, Action<IConstructibleObjectGetter>>()
-            {
-                {Skyrim.Keyword.CraftingSmelter, delegate {
-                    ingredientSet = alchemyAndSmithingSet;
-                    allSet = allSmithingSet;
-                    specificSet = smeltingSet;
-                }},
-                {Skyrim.Keyword.CraftingSmithingForge, delegate {
-                    ingredientSet = alchemyAndSmithingSet;
-                    allSet = allSmithingSet;
-                    specificSet = smithingSet;
-                }},
-                {Skyrim.Keyword.CraftingTanningRack, delegate {
-                    ingredientSet = alchemyAndSmithingSet;
-                    allSet = allSmithingSet;
-                    specificSet = tanningSet;
-                }},
-                {HearthFires.Keyword.BYOHCarpenterTable, delegate {
-                    ingredientSet = hearthFiresIngredientSet;
-                    allSet = allSmithingSet;
-                    specificSet = hearthFiresConstructionSet;
-                }},
-                {Skyrim.Keyword.CraftingCookpot, delegate(IConstructibleObjectGetter cobj) {
-                    if (cobj.CreatedObject.FormKeyNullable is FormKey result) {
-                        allFoodSet.Add(result);
-                        cookedFoodSet.Add(result);
-                    }
-                    ingredientSet = alchemyAndCookingSet;
-                    allSet = allFoodSet;
-                    specificSet = rawFoodSet;
-                }},
-                {Skyrim.Keyword.isGrainMill, delegate(IConstructibleObjectGetter cobj) {
-                    if (cobj.CreatedObject.FormKeyNullable is FormKey result) {
-                        rawFoodSet.Add(result);
-                        cookedFoodSet.Add(result);
-                    }
-                    ingredientSet = alchemyAndCookingSet;
-                    allSet = allFoodSet;
-                    specificSet = rawFoodSet;
-                }},
-            };
+        private readonly Dictionary<IFormLinkGetter<IKeywordGetter>, RecipeProcessor> recipeProcessorForWorkbench = new();
 
-            formListsForWorkbench[HearthFires.Keyword.BYOHCraftingOven] = formListsForWorkbench[Skyrim.Keyword.CraftingCookpot];
+        public Program(LoadOrder<IModListing<ISkyrimModGetter>> loadOrder, ILinkCache<ISkyrimMod, ISkyrimModGetter> linkCache, ISkyrimMod patchMod, GameRelease gameRelease, Settings? settings = null)
+        {
+            LoadOrder = loadOrder;
+            LinkCache = linkCache;
+            PatchMod = patchMod;
+            GameRelease = gameRelease;
 
+            if (settings != null)
+                Settings = new(settings);
+
+            loadOrderComparer = FormKey.LoadOrderComparer(LoadOrder);
+        }
+
+        public void RunPatch()
+        {
+            ClassifyRecipeItems(Settings.Value.DoNotUnburdenList);
+
+            RecordClassifiedItems();
+        }
+
+        public void ClassifyRecipeItems(HashSet<IFormLinkGetter<IItemGetter>> doNotUnburdenFormKeys)
+        {
             Console.WriteLine("Finding ingredients and results that we don't want to be burdened with.");
 
-            foreach (var cobj in state.LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
+            //var doNotUnburdenFormKeys = Settings.Value.DoNotUnburdenList;
+
+            var rpfw = recipeProcessorForWorkbench;
+
+            rpfw[Skyrim.Keyword.CraftingSmelter] = new(smeltingSet, allSmithingSet, alchemyAndSmithingSet, LinkCache, doNotUnburdenFormKeys);
+            rpfw[Skyrim.Keyword.CraftingSmithingForge] = new(smithingSet, allSmithingSet, alchemyAndSmithingSet, LinkCache, doNotUnburdenFormKeys);
+            rpfw[Skyrim.Keyword.CraftingTanningRack] = new(tanningSet, allSmithingSet, alchemyAndSmithingSet, LinkCache, doNotUnburdenFormKeys);
+            rpfw[HearthFires.Keyword.BYOHCarpenterTable] = new(hearthFiresConstructionSet, allSmithingSet, hearthFiresIngredientSet, LinkCache, doNotUnburdenFormKeys);
+            rpfw[Skyrim.Keyword.CraftingCookpot] = new(rawFoodSet, allFoodSet, alchemyAndCookingSet, LinkCache, doNotUnburdenFormKeys);
+            rpfw[Skyrim.Keyword.isGrainMill] = new(rawFoodSet, allFoodSet, alchemyAndCookingSet, LinkCache, doNotUnburdenFormKeys);
+            rpfw[HearthFires.Keyword.BYOHCraftingOven] = new(rawFoodSet, allFoodSet, alchemyAndCookingSet, LinkCache, doNotUnburdenFormKeys);
+
+            foreach (var cobj in LoadOrder.PriorityOrder.ConstructibleObject().WinningOverrides())
             {
-                var workbenchKeywordFormKey = cobj.WorkbenchKeyword.FormKey;
-                if (!workbenchFilter.Contains(workbenchKeywordFormKey)) continue;
+                ClassifyRecipeItems(cobj);
+            }
+        }
 
-                var items = cobj.Items;
-                if (items == null && !workbenchesThatNeedNoItems.Contains(workbenchKeywordFormKey)) continue;
+        public void ClassifyRecipeItems(IConstructibleObjectGetter recipe)
+        {
+            if (recipe.WorkbenchKeyword is not IFormLinkGetter<IKeywordGetter> workbench) return;
 
-                formListsForWorkbench[workbenchKeywordFormKey](cobj);
-
-                if (items == null) continue;
-                foreach (var item in items)
+            if (recipe.CreatedObject is IFormLinkGetter<IItemGetter> result)
+            {
+                if (workbench.Equals(Skyrim.Keyword.CraftingCookpot) || workbench.Equals(HearthFires.Keyword.BYOHCraftingOven))
                 {
-                    var itemFormKey = item.Item.Item.FormKey;
-                    var shouldUnburden = true;
-                    if (doNotUnburdenFormKeys.Contains(itemFormKey))
-                        shouldUnburden = false;
-
-                    if (!item.Item.Item.TryResolve(state.LinkCache, out var record)) continue;
-
-                    switch (record) {
-                        case IIngredientGetter ingredient:
-                        case IIngestibleGetter ingestible:
-                            ingredientSet.Add(itemFormKey);
-                            shouldUnburden = false;
-                            break;
-                        case IArmorGetter armor:
-                            if (armor.EditorID?.Contains("Ring Shank") == true)
-                                shouldUnburden = true; // intermediate ingredient from Immersive Jewellery
-                            else
-                                shouldUnburden = false;
-                            break;
-                        case IWeaponGetter weapon:
-                            shouldUnburden = false;
-                            break;
-                        default:
-                            shouldUnburden = true;
-                            break;
-                    }
-
-                    if (shouldUnburden)
-                    {
-                        allSet.Add(itemFormKey);
-                        specificSet.Add(itemFormKey);
-                    }
+                    allFoodSet.Add(result);
+                    cookedFoodSet.Add(result);
+                }
+                else if (workbench.Equals(Skyrim.Keyword.isGrainMill))
+                {
+                    rawFoodSet.Add(result);
+                    cookedFoodSet.Add(result);
                 }
             }
 
+            if (!recipeProcessorForWorkbench.TryGetValue(workbench, out var recipeProcessor))
+                return;
+
+            recipeProcessor.ClassifyRecipeIngredients(recipe);
+        }
+
+        public void RecordClassifiedItems()
+        {
             Console.WriteLine("Adding found items to GeneralStores Form Lists...");
 
-            var modCount = state.LoadOrder.PriorityOrder.Count();
+            ApplySetToFLST(GeneralStores.FormList.xGSxAlchCookFLST, alchemyAndCookingSet);
+            ApplySetToFLST(GeneralStores.FormList.xGSxAlchSmithFLST, alchemyAndSmithingSet);
 
-            var modKeyToPriority = state.LoadOrder.PriorityOrder.Select((x, i) => (x.ModKey, i)).ToDictionary(x => x.ModKey, x => (uint)(modCount - x.i));
+            ApplySetToFLST(GeneralStores.FormList.xGSxFoodAllFLST, allFoodSet);
+            ApplySetToFLST(GeneralStores.FormList.xGSxFoodCookedFLST, cookedFoodSet);
+            ApplySetToFLST(GeneralStores.FormList.xGSxFoodRawFLST, rawFoodSet);
 
-            IOrderedEnumerable<FormKey> orderByPriorityAndID(ISet<FormKey> formKeySet) => formKeySet.OrderBy(x => ((ulong)modKeyToPriority[x.ModKey] << 24) | x.ID);
-
-            void applySetToFLST(FormKey flstKey, ISet<FormKey> set)
-            {
-                var flst = state.LinkCache.Resolve<IFormListGetter>(flstKey);
-                if (flst is null) return;
-
-                var flstEDID = flst.EditorID;
-
-                var missingSet = new HashSet<FormKey>(set.Count);
-
-                Console.WriteLine($"Found {set.Count} records that should be in {flstEDID}");
-
-                var items = flst.Items.Select(x => x.FormKey).ToHashSet();
-
-                foreach (var item in flst.Items.Select(x => x.FormKey))
-                    if (!set.Remove(item))
-                        missingSet.Add(item);
-
-                if (missingSet.Count > 0)
-                {
-                    Console.WriteLine($"The following {missingSet.Count} records in {flstEDID} were not in the records we found:");
-                    foreach (var item in orderByPriorityAndID(missingSet))
-                        Console.WriteLine($"    {item}");
-                }
-
-                Console.WriteLine($"Found {set.Count} new records to add to {flstEDID}");
-
-                if (set.Count == 0) return;
-
-                var modifiedFlst = state.PatchMod.FormLists.GetOrAddAsOverride(flst);
-
-                modifiedFlst.Items.AddRange(orderByPriorityAndID(set));
-            }
-
-            applySetToFLST(GeneralStores.FormList.xGSxAlchCookFLST, alchemyAndCookingSet);
-            applySetToFLST(GeneralStores.FormList.xGSxAlchSmithFLST, alchemyAndSmithingSet);
-
-            applySetToFLST(GeneralStores.FormList.xGSxFoodAllFLST, allFoodSet);
-            applySetToFLST(GeneralStores.FormList.xGSxFoodCookedFLST, cookedFoodSet);
-            applySetToFLST(GeneralStores.FormList.xGSxFoodRawFLST, rawFoodSet);
-
-            applySetToFLST(GeneralStores.FormList.xGSxAllSmithFLST, allSmithingSet);
-            applySetToFLST(GeneralStores.FormList.xGSxSmeltingFLST, smeltingSet);
-            applySetToFLST(GeneralStores.FormList.xGSxSmithingFLST, smithingSet);
-            applySetToFLST(GeneralStores.FormList.xGSxTanningFLST, tanningSet);
+            ApplySetToFLST(GeneralStores.FormList.xGSxAllSmithFLST, allSmithingSet);
+            ApplySetToFLST(GeneralStores.FormList.xGSxSmeltingFLST, smeltingSet);
+            ApplySetToFLST(GeneralStores.FormList.xGSxSmithingFLST, smithingSet);
+            ApplySetToFLST(GeneralStores.FormList.xGSxTanningFLST, tanningSet);
 
             // these FormLists have been merged into GeneralStores.esm in SkyrimSE/VR, but are in a separate plugin in SkyrimLE.
-            switch (state.Settings.GameRelease)
+            switch (GameRelease)
             {
                 case GameRelease.SkyrimSE:
                 case GameRelease.SkyrimVR:
-                    applySetToFLST(GeneralStores.FormList.xHFSxConstructionFLST, hearthFiresConstructionSet);
-                    applySetToFLST(GeneralStores.FormList.xHFSxIngredientsFLST, hearthFiresIngredientSet);
+                    ApplySetToFLST(GeneralStores.FormList.xHFSxConstructionFLST, hearthFiresConstructionSet);
+                    ApplySetToFLST(GeneralStores.FormList.xHFSxIngredientsFLST, hearthFiresIngredientSet);
                     break;
                 case GameRelease.SkyrimLE:
-                    if (state.LoadOrder.PriorityOrder.HasMod(HearthFireStores_GS.FormList.xHFSxConstructionFLST.ModKey, true))
-                    {
-                        applySetToFLST(HearthFireStores_GS.FormList.xHFSxConstructionFLST, hearthFiresConstructionSet);
-                        applySetToFLST(HearthFireStores_GS.FormList.xHFSxIngredientsFLST, hearthFiresIngredientSet);
-                    }
+                    ApplySetToFLST(HearthFireStores_GS.FormList.xHFSxConstructionFLST, hearthFiresConstructionSet);
+                    ApplySetToFLST(HearthFireStores_GS.FormList.xHFSxIngredientsFLST, hearthFiresIngredientSet);
                     break;
                 default:
-                    throw new NotImplementedException("");
+                    throw new NotImplementedException();
             }
+        }
+
+        public void ApplySetToFLST(IFormLinkGetter<IFormListGetter> flstKey, ISet<IFormLinkGetter<IItemGetter>> set)
+        {
+            if (!flstKey.TryResolve(LinkCache, out var flst)) return;
+
+            var flstEDID = flst.EditorID;
+
+            HashSet<IFormLinkGetter<IItemGetter>>? missingSet = new(set.Count);
+
+            Console.WriteLine($"Found {set.Count} records that should be in {flstEDID}");
+
+            foreach (var thing in flst.Items)
+                if (thing is IFormLinkGetter<IItemGetter> item)
+                    if (!set.Remove(item))
+                        missingSet.Add(item);
+
+            if (missingSet.Count > 0)
+            {
+                Console.WriteLine($"The following {missingSet.Count} records in {flstEDID} were not in the records we found:");
+                foreach (var item in missingSet.OrderBy(x => x.FormKey, loadOrderComparer))
+                    Console.WriteLine($"    {item}");
+            }
+
+            Console.WriteLine($"Found {set.Count} new records to add to {flstEDID}");
+
+            if (set.Count == 0) return;
+
+            var modifiedFlst = PatchMod.FormLists.GetOrAddAsOverride(flst);
+
+            modifiedFlst.Items.AddRange(set.OrderBy(x => x.FormKey, loadOrderComparer));
         }
     }
 }
