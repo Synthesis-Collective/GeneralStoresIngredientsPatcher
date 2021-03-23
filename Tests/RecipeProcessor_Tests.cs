@@ -9,7 +9,7 @@ namespace Tests
 {
     public class RecipeProcessor_Tests
     {
-        public static ModKey masterModKey = ModKey.FromNameAndExtension("master.esp");
+        public static readonly ModKey masterModKey = ModKey.FromNameAndExtension("master.esp");
 
         [Fact]
         public static void RecipeWithNoItems()
