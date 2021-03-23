@@ -105,7 +105,7 @@ namespace Tests
         }
 
         [Fact]
-        public static void IngestibleIngredient()
+        public static void IngestibleItem()
         {
             var theItemFormLink = Skyrim.Ingestible.Ale;
 
@@ -133,6 +133,34 @@ namespace Tests
             Assert.Single(ingredientSet);
         }
 
+        [Fact]
+        public static void IngredientItem()
+        {
+            var theItemFormLink = Skyrim.Ingredient.SkeeverTail;
+
+            SkyrimMod masterMod = new(theItemFormLink.FormKey.ModKey, SkyrimRelease.SkyrimSE);
+
+            var theItem = new Ingredient(theItemFormLink.FormKey, masterMod.SkyrimRelease);
+
+            masterMod.Ingredients.Add(theItem);
+
+            var linkCache = masterMod.ToImmutableLinkCache();
+
+            HashSet<IFormLinkGetter<IItemGetter>> specificSet = new();
+            HashSet<IFormLinkGetter<IItemGetter>> allSet = new();
+            HashSet<IFormLinkGetter<IItemGetter>> ingredientSet = new();
+            HashSet<IFormLinkGetter<IItemGetter>> doNotUnburdenFormKeys = new();
+
+            RecipeProcessor recipeProcessor = new(specificSet, allSet, ingredientSet, linkCache, doNotUnburdenFormKeys);
+
+
+            recipeProcessor.ClassifyIngredient(theItemFormLink);
+
+
+            Assert.Empty(specificSet);
+            Assert.Empty(allSet);
+            Assert.Single(ingredientSet);
+        }
         [Fact]
         public static void ArmorIngredient()
         {

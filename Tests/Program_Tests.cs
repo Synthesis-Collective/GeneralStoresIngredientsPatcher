@@ -1,3 +1,6 @@
+using GeneralStoresIngredientsPatcher;
+using Mutagen.Bethesda.Skyrim;
+using Mutagen.Bethesda.Synthesis;
 using Xunit;
 
 namespace Tests
@@ -7,7 +10,10 @@ namespace Tests
         [Fact]
         public static void RunPatcher()
         {
-            // TODO
+            // TODO how would we do this?
+            //IPatcherState<ISkyrimMod, ISkyrimModGetter> state = null;
+
+            //Program.RunPatch(state);
         }
     }
 }

@@ -34,38 +34,26 @@ namespace GeneralStoresIngredientsPatcher
 
         public void ClassifyIngredient(IFormLinkGetter<IItemGetter> itemLink)
         {
+            if (DoNotUnburdenFormKeys.Contains(itemLink)) return;
             if (!itemLink.TryResolve(LinkCache, out var record)) return;
 
-            bool shouldUnburden;
-            switch (record)
-            {
-                case IIngredientGetter:
-                case IIngestibleGetter:
-                    IngredientSet.Add(itemLink);
-                    shouldUnburden = false;
-                    break;
-                case IArmorGetter armor:
-                    if (armor.EditorID?.Contains("Ring Shank") == true)
-                        shouldUnburden = true; // intermediate ingredient from Immersive Jewellery
-                    else
-                        shouldUnburden = false;
-                    break;
-                case IWeaponGetter:
-                    shouldUnburden = false;
-                    break;
-                default:
-                    shouldUnburden = true;
-                    break;
-            }
+            if (record is IIngredientGetter || record is IIngestibleGetter)
+                IngredientSet.Add(itemLink);
 
-            if (DoNotUnburdenFormKeys.Contains(itemLink))
-                shouldUnburden = false;
-
-            if (shouldUnburden)
+            if (ShouldUnburden(record))
             {
                 AllSet.Add(itemLink);
                 SpecificSet.Add(itemLink);
             }
         }
+
+        public static bool ShouldUnburden(IItemGetter record) => record switch
+        {
+            IIngredientGetter or IIngestibleGetter or IWeaponGetter => false,
+            IArmorGetter armor => IsRingShank(armor),
+            _ => true,
+        };
+
+        private static bool IsRingShank(IArmorGetter armor) => (armor.EditorID?.Contains("Ring Shank")) == true;
     }
 }
