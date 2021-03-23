@@ -8,9 +8,9 @@ namespace Mutagen.Bethesda.FormKeys.SkyrimLE
         public readonly static ModKey ModKey = ModKey.FromNameAndExtension("HearthFireStores(GS).esp");
         public static class FormList
         {
-            private static FormLink<IKeywordGetter> Construct(uint formID) => new(ModKey.MakeFormKey(formID));
-            public static FormKey xHFSxConstructionFLST => Construct(0x12c7);
-            public static FormKey xHFSxIngredientsFLST => Construct(0x840d);
+            private static FormLink<IFormListGetter> Construct(uint formID) => new(ModKey.MakeFormKey(formID));
+            public static IFormLink<IFormListGetter> xHFSxConstructionFLST => Construct(0x12c7);
+            public static IFormLink<IFormListGetter> xHFSxIngredientsFLST => Construct(0x840d);
         }
     }
 }
