@@ -122,7 +122,7 @@ namespace GeneralStoresIngredientsPatcher
         {
             if (recipe.WorkbenchKeyword is not IFormLinkGetter<IKeywordGetter> workbench) return;
 
-            if (recipe.CreatedObject is IFormLinkGetter<IItemGetter> result)
+            if (recipe.CreatedObject is IFormLinkGetter<IItemGetter> result && !result.IsNull)
             {
                 if (workbench.Equals(Skyrim.Keyword.CraftingCookpot) || workbench.Equals(HearthFires.Keyword.BYOHCraftingOven))
                 {
