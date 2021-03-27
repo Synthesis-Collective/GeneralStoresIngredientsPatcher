@@ -158,20 +158,19 @@ namespace GeneralStoresIngredientsPatcher
             ApplySetToFLST(GeneralStores.FormList.xGSxTanningFLST, tanningSet);
 
             // these FormLists have been merged into GeneralStores.esm in SkyrimSE/VR, but are in a separate plugin in SkyrimLE.
-            switch (GameRelease)
+            ApplySetToFLST(GameRelease switch
             {
-                case GameRelease.SkyrimSE:
-                case GameRelease.SkyrimVR:
-                    ApplySetToFLST(GeneralStores.FormList.xHFSxConstructionFLST, hearthFiresConstructionSet);
-                    ApplySetToFLST(GeneralStores.FormList.xHFSxIngredientsFLST, hearthFiresIngredientSet);
-                    break;
-                case GameRelease.SkyrimLE:
-                    ApplySetToFLST(HearthFireStores_GS.FormList.xHFSxConstructionFLST, hearthFiresConstructionSet);
-                    ApplySetToFLST(HearthFireStores_GS.FormList.xHFSxIngredientsFLST, hearthFiresIngredientSet);
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
+                GameRelease.SkyrimSE or GameRelease.SkyrimVR => GeneralStores.FormList.xHFSxConstructionFLST,
+                GameRelease.SkyrimLE => HearthFireStores_GS.FormList.xHFSxConstructionFLST,
+                _ => throw new NotImplementedException()
+            }, hearthFiresConstructionSet);
+
+            ApplySetToFLST(GameRelease switch
+            {
+                GameRelease.SkyrimSE or GameRelease.SkyrimVR => GeneralStores.FormList.xHFSxIngredientsFLST,
+                GameRelease.SkyrimLE => HearthFireStores_GS.FormList.xHFSxIngredientsFLST,
+                _ => throw new NotImplementedException()
+            }, hearthFiresIngredientSet);
         }
 
         public void ApplySetToFLST(IFormLinkGetter<IFormListGetter> flstKey, ISet<IFormLinkGetter<IItemGetter>> set)
