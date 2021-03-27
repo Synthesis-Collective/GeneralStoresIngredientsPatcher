@@ -1,28 +1,29 @@
-#pragma warning disable IDE1006 // Naming Styles
 using Mutagen.Bethesda.Skyrim;
+using System.CodeDom.Compiler;
 
 namespace Mutagen.Bethesda.FormKeys.SkyrimSE
 {
+    [GeneratedCode("Mutagen.Bethesda.FormKeys.Generator","2.0.0")]
     public static partial class GeneralStores
     {
         public readonly static ModKey ModKey = ModKey.FromNameAndExtension("GeneralStores.esm");
         public static class FormList
         {
             private static FormLink<IFormListGetter> Construct(uint formID) => new(ModKey.MakeFormKey(formID));
-            public static IFormLink<IFormListGetter> GeneralStoresAllDLCAddonForms => Construct(0xcf37e);
-            public static IFormLink<IFormListGetter> GeneralStoresForms => Construct(0xcf37d);
+            //public static IFormLink<IFormListGetter> GeneralStoresAllDLCAddonForms => Construct(0xcf37e);
+            //public static IFormLink<IFormListGetter> GeneralStoresForms => Construct(0xcf37d);
             public static IFormLink<IFormListGetter> xGSxAlchCookFLST => Construct(0x10193);
-            public static IFormLink<IFormListGetter> xGSxAlchCookNewFLST => Construct(0x9e6ec);
+            //public static IFormLink<IFormListGetter> xGSxAlchCookNewFLST => Construct(0x9e6ec);
             public static IFormLink<IFormListGetter> xGSxAlchSmithFLST => Construct(0x8508a);
             public static IFormLink<IFormListGetter> xGSxAllSmithFLST => Construct(0xa6db9);
-            public static IFormLink<IFormListGetter> xGSxAllSmithNewFLST => Construct(0xa6dbb);
-            public static IFormLink<IFormListGetter> xGSxArmorAllFLST => Construct(0xa7de5);
-            public static IFormLink<IFormListGetter> xGSxArmorAllNewFLST => Construct(0xa6dba);
-            public static IFormLink<IFormListGetter> xGSxArmorClothingFLST => Construct(0xa3d2b);
-            public static IFormLink<IFormListGetter> xGSxArmorClothingNewFLST => Construct(0xa47fb);
-            public static IFormLink<IFormListGetter> xGSxArmorHeavyFLST => Construct(0xa3d2c);
-            public static IFormLink<IFormListGetter> xGSxArmorHeavyNewFLST => Construct(0xa47f9);
-            public static IFormLink<IFormListGetter> xGSxArmorLightFLST => Construct(0xa3d2e);
+            //public static IFormLink<IFormListGetter> xGSxAllSmithNewFLST => Construct(0xa6dbb);
+            //public static IFormLink<IFormListGetter> xGSxArmorAllFLST => Construct(0xa7de5);
+            //public static IFormLink<IFormListGetter> xGSxArmorAllNewFLST => Construct(0xa6dba);
+            //public static IFormLink<IFormListGetter> xGSxArmorClothingFLST => Construct(0xa3d2b);
+            //public static IFormLink<IFormListGetter> xGSxArmorClothingNewFLST => Construct(0xa47fb);
+            //public static IFormLink<IFormListGetter> xGSxArmorHeavyFLST => Construct(0xa3d2c);
+            //public static IFormLink<IFormListGetter> xGSxArmorHeavyNewFLST => Construct(0xa47f9);
+            //public static IFormLink<IFormListGetter> xGSxArmorLightFLST => Construct(0xa3d2e);
             public static IFormLink<IFormListGetter> xGSxArmorLightNewFLST => Construct(0xa47fa);
             public static IFormLink<IFormListGetter> xGSxArmorShieldsFLST => Construct(0xa3d2f);
             public static IFormLink<IFormListGetter> xGSxArmorShieldsNewFLST => Construct(0xa47f8);
