@@ -1,4 +1,5 @@
 using GeneralStoresIngredientsPatcher;
+using Mutagen.Bethesda;
 using Mutagen.Bethesda.Skyrim;
 using Mutagen.Bethesda.Synthesis;
 using Xunit;
@@ -8,12 +9,22 @@ namespace Tests
     public class Program_Tests
     {
         [Fact]
-        public static void RunPatcher()
+        public static void DoNothing()
         {
-            // TODO how would we do this?
-            //IPatcherState<ISkyrimMod, ISkyrimModGetter> state = null;
+            ModKey modKey = ModKey.FromNameAndExtension("Patch.esp");
 
-            //Program.RunPatch(state);
+            ISkyrimMod patchMod = new SkyrimMod(modKey,SkyrimRelease.SkyrimSE);
+
+            LoadOrder<IModListing<ISkyrimModGetter>> loadOrder = new()
+            {
+                new ModListing<ISkyrimMod>(patchMod, true)
+            };
+
+            ILinkCache<ISkyrimMod, ISkyrimModGetter> linkCache = loadOrder.ToImmutableLinkCache();
+
+            var program = new Program(loadOrder, linkCache, patchMod, GameRelease.SkyrimSE, new());
+
+            program.RunPatch();
         }
     }
 }
