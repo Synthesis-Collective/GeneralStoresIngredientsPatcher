@@ -1,8 +1,9 @@
-#pragma warning disable IDE1006 // Naming Styles
 using Mutagen.Bethesda.Skyrim;
+using System.CodeDom.Compiler;
 
 namespace Mutagen.Bethesda.FormKeys.SkyrimLE
 {
+    [GeneratedCode("Mutagen.Bethesda.FormKeys.Generator", "2.0.0")]
     public static partial class HearthFireStores_GS
     {
         public readonly static ModKey ModKey = ModKey.FromNameAndExtension("HearthFireStores(GS).esp");
