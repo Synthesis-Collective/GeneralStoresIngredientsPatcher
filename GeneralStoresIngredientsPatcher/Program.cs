@@ -33,6 +33,22 @@ namespace GeneralStoresIngredientsPatcher
                 .Run(args);
         }
 
+        public static readonly ISet<IFormLinkGetter<IKeywordGetter>> workbenchFilter = new HashSet<IFormLinkGetter<IKeywordGetter>>(){
+            Skyrim.Keyword.CraftingSmelter,
+            Skyrim.Keyword.CraftingSmithingForge,
+            Skyrim.Keyword.CraftingCookpot,
+            Skyrim.Keyword.CraftingTanningRack,
+            Skyrim.Keyword.isGrainMill,
+            HearthFires.Keyword.BYOHCraftingOven,
+            HearthFires.Keyword.BYOHCarpenterTable
+        };
+
+        public static readonly ISet<IFormLinkGetter<IKeywordGetter>> workbenchesThatNeedNoItems = new HashSet<IFormLinkGetter<IKeywordGetter>>(){
+            Skyrim.Keyword.CraftingCookpot,
+            Skyrim.Keyword.isGrainMill,
+            HearthFires.Keyword.BYOHCraftingOven
+        };
+
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
             new Program(loadOrder: state.LoadOrder,
