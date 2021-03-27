@@ -11,8 +11,8 @@ namespace Tests
 {
     public class RecordClassifiedItems_Tests
     {
-        public static ModKey masterModKey = ModKey.FromNameAndExtension("master.esp");
-        public static ModKey patchModKey = ModKey.FromNameAndExtension("patch.esp");
+        public static readonly ModKey masterModKey = ModKey.FromNameAndExtension("master.esp");
+        public static readonly ModKey patchModKey = ModKey.FromNameAndExtension("patch.esp");
 
         [Fact]
         public void AddAThing()

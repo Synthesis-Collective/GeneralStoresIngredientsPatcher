@@ -49,12 +49,13 @@ namespace GeneralStoresIngredientsPatcher
             HearthFires.Keyword.BYOHCraftingOven
         };
 
-        public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
+        private static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            new Program(loadOrder: state.LoadOrder,
-            linkCache: state.LinkCache,
-            patchMod: state.PatchMod,
-            gameRelease: state.GameRelease).RunPatch();
+            new Program(
+                loadOrder: state.LoadOrder,
+                linkCache: state.LinkCache,
+                patchMod: state.PatchMod,
+                gameRelease: state.GameRelease).RunPatch();
         }
 
         public readonly HashSet<IFormLinkGetter<IItemGetter>> allSmithingSet = new();
@@ -121,7 +122,7 @@ namespace GeneralStoresIngredientsPatcher
         {
             if (recipe.WorkbenchKeyword is not IFormLinkGetter<IKeywordGetter> workbench) return;
 
-            if (recipe.CreatedObject is IFormLinkGetter<IItemGetter> result)
+            if (recipe.CreatedObject is IFormLinkGetter<IItemGetter> result && !result.IsNull)
             {
                 if (workbench.Equals(Skyrim.Keyword.CraftingCookpot) || workbench.Equals(HearthFires.Keyword.BYOHCraftingOven))
                 {
@@ -158,20 +159,19 @@ namespace GeneralStoresIngredientsPatcher
             ApplySetToFLST(GeneralStores.FormList.xGSxTanningFLST, tanningSet);
 
             // these FormLists have been merged into GeneralStores.esm in SkyrimSE/VR, but are in a separate plugin in SkyrimLE.
-            switch (GameRelease)
+            ApplySetToFLST(GameRelease switch
             {
-                case GameRelease.SkyrimSE:
-                case GameRelease.SkyrimVR:
-                    ApplySetToFLST(GeneralStores.FormList.xHFSxConstructionFLST, hearthFiresConstructionSet);
-                    ApplySetToFLST(GeneralStores.FormList.xHFSxIngredientsFLST, hearthFiresIngredientSet);
-                    break;
-                case GameRelease.SkyrimLE:
-                    ApplySetToFLST(HearthFireStores_GS.FormList.xHFSxConstructionFLST, hearthFiresConstructionSet);
-                    ApplySetToFLST(HearthFireStores_GS.FormList.xHFSxIngredientsFLST, hearthFiresIngredientSet);
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
+                GameRelease.SkyrimSE or GameRelease.SkyrimVR => GeneralStores.FormList.xHFSxConstructionFLST,
+                GameRelease.SkyrimLE => HearthFireStores_GS.FormList.xHFSxConstructionFLST,
+                _ => throw new NotImplementedException()
+            }, hearthFiresConstructionSet);
+
+            ApplySetToFLST(GameRelease switch
+            {
+                GameRelease.SkyrimSE or GameRelease.SkyrimVR => GeneralStores.FormList.xHFSxIngredientsFLST,
+                GameRelease.SkyrimLE => HearthFireStores_GS.FormList.xHFSxIngredientsFLST,
+                _ => throw new NotImplementedException()
+            }, hearthFiresIngredientSet);
         }
 
         public void ApplySetToFLST(IFormLinkGetter<IFormListGetter> flstKey, ISet<IFormLinkGetter<IItemGetter>> set)

@@ -9,7 +9,7 @@ namespace Tests
 {
     public class ClassifyRecipeItems_Tests
     {
-        public static ModKey masterModKey = ModKey.FromNameAndExtension("master.esp");
+        public static readonly ModKey masterModKey = ModKey.FromNameAndExtension("master.esp");
 
         internal static void AssertUnchanged(Program program)
         {
@@ -30,7 +30,7 @@ namespace Tests
         public static void RecipeWithNoWorkbench() {
             SkyrimMod masterMod = new(masterModKey, SkyrimRelease.SkyrimSE);
 
-            var newRecipe = masterMod.ConstructibleObjects.AddNew("newRecipe");
+            masterMod.ConstructibleObjects.AddNew("newRecipe");
 
             var linkCache = masterMod.ToImmutableLinkCache();
 

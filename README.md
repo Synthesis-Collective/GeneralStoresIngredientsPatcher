@@ -1,6 +1,8 @@
 # General Stores Ingredients Patcher
 
-Adds ingredients from recipes to General Stores list of items to automatically unburden
+Adds ingredients from recipes to General Stores
+([LE](https://www.nexusmods.com/skyrim/mods/18340)|[SE](https://www.nexusmods.com/skyrimspecialedition/mods/4322))
+list of items to automatically unburden
 
 [![Main Build Status](https://github.com/mrudat/GeneralStoresIngredientsPatcher/actions/workflows/ci-prod.yaml/badge.svg)](https://github.com/mrudat/GeneralStoresIngredientsPatcher/actions/workflows/ci-prod.yaml)
 [![Dev Build Status](https://github.com/mrudat/GeneralStoresIngredientsPatcher/actions/workflows/ci-dev.yaml/badge.svg)](https://github.com/mrudat/GeneralStoresIngredientsPatcher/actions/workflows/ci-dev.yaml)
