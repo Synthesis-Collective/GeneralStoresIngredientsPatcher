@@ -51,7 +51,8 @@ namespace GeneralStoresIngredientsPatcher
 
         private static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            new Program(loadOrder: state.LoadOrder,
+            new Program(
+                loadOrder: state.LoadOrder,
                 linkCache: state.LinkCache,
                 patchMod: state.PatchMod,
                 gameRelease: state.GameRelease).RunPatch();
