@@ -49,12 +49,12 @@ namespace GeneralStoresIngredientsPatcher
             HearthFires.Keyword.BYOHCraftingOven
         };
 
-        public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
+        private static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
             new Program(loadOrder: state.LoadOrder,
-            linkCache: state.LinkCache,
-            patchMod: state.PatchMod,
-            gameRelease: state.GameRelease).RunPatch();
+                linkCache: state.LinkCache,
+                patchMod: state.PatchMod,
+                gameRelease: state.GameRelease).RunPatch();
         }
 
         public readonly HashSet<IFormLinkGetter<IItemGetter>> allSmithingSet = new();
