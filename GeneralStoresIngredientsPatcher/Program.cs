@@ -7,6 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Cache;
+using Mutagen.Bethesda.Plugins.Order;
 using GeneralStores = Mutagen.Bethesda.FormKeys.SkyrimSE.GeneralStores;
 
 namespace GeneralStoresIngredientsPatcher
@@ -15,7 +18,7 @@ namespace GeneralStoresIngredientsPatcher
     {
         static Lazy<Settings> Settings = null!;
 
-        private readonly LoadOrder<IModListing<ISkyrimModGetter>> LoadOrder;
+        private readonly ILoadOrderGetter<IModListingGetter<ISkyrimModGetter>> LoadOrder;
         private readonly ILinkCache<ISkyrimMod, ISkyrimModGetter> LinkCache;
         private readonly ISkyrimMod PatchMod;
         private readonly GameRelease GameRelease;
@@ -76,7 +79,7 @@ namespace GeneralStoresIngredientsPatcher
 
         private readonly Dictionary<IFormLinkGetter<IKeywordGetter>, RecipeProcessor> recipeProcessorForWorkbench = new();
 
-        public Program(LoadOrder<IModListing<ISkyrimModGetter>> loadOrder, ILinkCache<ISkyrimMod, ISkyrimModGetter> linkCache, ISkyrimMod patchMod, GameRelease gameRelease, Settings? settings = null)
+        public Program(ILoadOrderGetter<IModListingGetter<ISkyrimModGetter>> loadOrder, ILinkCache<ISkyrimMod, ISkyrimModGetter> linkCache, ISkyrimMod patchMod, GameRelease gameRelease, Settings? settings = null)
         {
             LoadOrder = loadOrder;
             LinkCache = linkCache;

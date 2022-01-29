@@ -4,6 +4,9 @@ using Mutagen.Bethesda.FormKeys.SkyrimSE;
 using Mutagen.Bethesda.Skyrim;
 using Mutagen.Bethesda.Synthesis;
 using System.Linq;
+using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Cache;
+using Mutagen.Bethesda.Plugins.Order;
 using Xunit;
 
 namespace Tests
@@ -17,7 +20,7 @@ namespace Tests
 
             ISkyrimMod patchMod = new SkyrimMod(modKey,SkyrimRelease.SkyrimSE);
 
-            LoadOrder<IModListing<ISkyrimModGetter>> loadOrder = new()
+            LoadOrder<IModListingGetter<ISkyrimModGetter>> loadOrder = new()
             {
                 new ModListing<ISkyrimMod>(patchMod, true)
             };
@@ -61,7 +64,7 @@ namespace Tests
             });
             newRecipe.WorkbenchKeyword.SetTo(Skyrim.Keyword.CraftingCookpot);
 
-            LoadOrder<IModListing<ISkyrimModGetter>> loadOrder = new()
+            LoadOrder<IModListingGetter<ISkyrimModGetter>> loadOrder = new()
             {
                 new ModListing<ISkyrimMod>(masterMod, true),
                 new ModListing<ISkyrimMod>(patchMod, true)

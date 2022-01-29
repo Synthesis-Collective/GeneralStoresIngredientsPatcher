@@ -1,6 +1,8 @@
 ﻿using Mutagen.Bethesda;
 using Mutagen.Bethesda.Skyrim;
 using System.Collections.Generic;
+using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Cache;
 
 namespace GeneralStoresIngredientsPatcher
 {

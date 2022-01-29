@@ -2,6 +2,7 @@ using Mutagen.Bethesda;
 using Mutagen.Bethesda.FormKeys.SkyrimSE;
 using Mutagen.Bethesda.Skyrim;
 using System.Collections.Generic;
+using Mutagen.Bethesda.Plugins;
 
 namespace GeneralStoresIngredientsPatcher
 {

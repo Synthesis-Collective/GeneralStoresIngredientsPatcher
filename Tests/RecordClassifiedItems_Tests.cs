@@ -4,6 +4,8 @@ using Mutagen.Bethesda.FormKeys.SkyrimLE;
 using Mutagen.Bethesda.Skyrim;
 using System;
 using System.Linq;
+using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Order;
 using Xunit;
 using GeneralStores = Mutagen.Bethesda.FormKeys.SkyrimSE.GeneralStores;
 
@@ -29,7 +31,7 @@ namespace Tests
 
             SkyrimMod patchMod = new(patchModKey, SkyrimRelease.SkyrimSE);
 
-            var loadOrder = new LoadOrder<IModListing<ISkyrimModGetter>>
+            var loadOrder = new LoadOrder<IModListingGetter<ISkyrimModGetter>>
             {
                 new ModListing<ISkyrimModGetter>(generalStores, true),
                 new ModListing<ISkyrimModGetter>(masterMod, true),
@@ -90,7 +92,7 @@ namespace Tests
 
             SkyrimMod patchMod = new(patchModKey, release);
 
-            var loadOrder = new LoadOrder<IModListing<ISkyrimModGetter>>
+            var loadOrder = new LoadOrder<IModListingGetter<ISkyrimModGetter>>
             {
                 new ModListing<ISkyrimModGetter>(generalStores, true),
                 new ModListing<ISkyrimModGetter>(masterMod, true),

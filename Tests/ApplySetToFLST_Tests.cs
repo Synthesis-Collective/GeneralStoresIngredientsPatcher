@@ -3,6 +3,8 @@ using Mutagen.Bethesda;
 using Mutagen.Bethesda.Skyrim;
 using System.Collections.Generic;
 using System.Linq;
+using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Order;
 using Xunit;
 
 namespace Tests
@@ -27,7 +29,7 @@ namespace Tests
 
             var linkCache = masterMod.ToImmutableLinkCache();
 
-            var loadOrder = new LoadOrder<IModListing<ISkyrimModGetter>>
+            var loadOrder = new LoadOrder<IModListingGetter<ISkyrimModGetter>>
             {
                 new ModListing<ISkyrimModGetter>(masterMod, true),
                 new ModListing<ISkyrimModGetter>(patchMod, true)
@@ -55,7 +57,7 @@ namespace Tests
 
             var linkCache = masterMod.ToImmutableLinkCache();
 
-            var loadOrder = new LoadOrder<IModListing<ISkyrimModGetter>>
+            var loadOrder = new LoadOrder<IModListingGetter<ISkyrimModGetter>>
             {
                 new ModListing<ISkyrimModGetter>(masterMod, true),
                 new ModListing<ISkyrimModGetter>(patchMod, true)
@@ -97,7 +99,7 @@ namespace Tests
 
             var linkCache = masterMod.ToImmutableLinkCache();
 
-            var loadOrder = new LoadOrder<IModListing<ISkyrimModGetter>>
+            var loadOrder = new LoadOrder<IModListingGetter<ISkyrimModGetter>>
             {
                 new ModListing<ISkyrimModGetter>(masterMod, true),
                 new ModListing<ISkyrimModGetter>(patchMod, true)
